@@ -11,7 +11,7 @@
             "program": "degrees.py",
             "args": ["small"],
             "console": "integratedTerminal",
-            "cwd": "c:\\cs50AI-problem-sets\\degrees"
+            "cwd": "/home/laube/cs50AI-problem-sets/degrees"
         },
         {
             "name": "Degrees Large Files",
@@ -20,7 +20,7 @@
             "program": "degrees.py",
             "args": ["large"],
             "console": "integratedTerminal",
-            "cwd": "c:\\cs50AI-problem-sets\\degrees"
+            "cwd": "/home/laube/cs50AI-problem-sets/degrees"
         }
     ]
 }
