@@ -3,6 +3,7 @@ Tic Tac Toe Player
 """
 
 import math
+from copy import deepcopy
 
 X = "X"
 O = "O"
@@ -10,6 +11,10 @@ EMPTY = None
 
 
 class InvalidMoveException(Exception):
+    """
+    Define a custom Exception,
+    raised when a invalid move is made 
+    """
     pass
 
 
@@ -62,7 +67,7 @@ def result(board, action):
     Returns the board that results from making move (i, j) on the board.
     """
     # Initialize a resulting board, to not modify the original one
-    result_board = board.copy()
+    result_board = deepcopy(board)
     # Check if this action is valid
     if action in actions(board):
         # Add the move and return the board
@@ -90,8 +95,8 @@ def winner(board):
     # Check for diagonal win
     if board[0][0] == board[1][1] and board[0][0] == board[2][2]:
         return board[0][0]
-    if board[1][3] == board[2][2] and board[1][3] == board[3][1]:
-        return board[0][0]
+    if board[0][2] == board[1][1] and board[0][2] == board[2][0]:
+        return board[0][2]
 
     # If none of the above conditions were met, there is no winner
     return None
@@ -135,18 +140,96 @@ def minimax(board):
     current_player = player(board)
     possible_actions = actions(board)
 
-    if len(possible_actions == 1):
-        return possible_actions[0]
+    optimal_action = None
+
+    # Initialize alpha, to store the best
+    # already explored option for the maximizer
+    alpha = -math.inf
+
+    # Initialize beta, to store the best
+    # already explored option for the minimizer
+    beta = math.inf
 
     if current_player == X:
-        MAX
-        
-        for action in possible_actions:
-            minimax(result(board, action))
-    else
-        MIN
+        # MAX
+        value = -math.inf
 
-    raise NotImplementedError
+        for action in possible_actions:
+            action_value = min_value(result(board, action), alpha, beta)
+            if action_value > value:
+                value = action_value
+                optimal_action = action
+                if value > beta:
+                    break
+                if value > alpha:
+                    alpha = value
+
+    else:
+        # MIN
+        value = math.inf
+
+        for action in possible_actions:
+            action_value = max_value(result(board, action), alpha, beta)
+            if action_value < value:
+                value = action_value
+                optimal_action = action
+                if value < alpha:
+                    break
+                if value < beta:
+                    beta = value
+
+    return optimal_action
+
+
+def max_value(board, alpha, beta):
+    """
+    Return the maximum utility value that can arise
+    from a state given by board, considering optimal play
+    """
+    if terminal(board):
+        return utility(board)
+
+    # Initialize value as low as possible
+    value = -math.inf
+
+    for action in actions(board):
+        # Call max and min recursively until a terminal state in reached
+        action_value = min_value(result(board, action), alpha, beta)
+        value = max(value, action_value)
+        # Being a maximizer, it is known that the value max_value
+        # returns, is gonna be at least the value I just got.
+        # Since ultimately I want to minimize the value (max_value
+        # was called by min_value), it is not worth to continue
+        # searching for other results (prune the tree here)
+        if value >= beta:
+            break
+        if value > alpha:
+            alpha = value
+
+    return value
+
+
+def min_value(board, alpha, beta):
+    """
+    Return the minimum utility value that can arise
+    from a state given by board, considering optimal play
+    """
+    if terminal(board):
+        return utility(board)
+
+    # Initialize value as high as possible
+    value = math.inf
+
+    for action in actions(board):
+        # Call max and min recursively until a terminal state in reached
+        action_value = max_value(result(board, action), alpha, beta)
+        value = min(value, action_value)
+        if value <= alpha:
+            break
+        if value < beta:
+            beta = value
+
+    return value
 
 
 def count_empty(board):
