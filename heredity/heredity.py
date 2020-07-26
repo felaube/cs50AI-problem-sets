@@ -139,7 +139,177 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         * everyone in set `have_trait` has the trait, and
         * everyone not in set` have_trait` does not have the trait.
     """
-    raise NotImplementedError
+    probability = 1
+    for person in people:
+        # We assume assume that either mother and father are both blank
+        # (no parental information in the data set),
+        # or mother and father will both refer to other people
+        # in the people dictionary
+        if people[person]["mother"] or people[person]["father"]:
+            mother = {"name": people[person]["mother"]}
+            father = {"name": people[person]["father"]}
+
+            if mother["name"] in one_gene:
+                mother["num_genes"] = 1
+            elif mother["name"] in two_genes:
+                mother["num_genes"] = 2
+            else:
+                mother["num_genes"] = 0
+
+            if father["name"] in one_gene:
+                father["num_genes"] = 1
+            elif father["name"] in two_genes:
+                father["num_genes"] = 2
+            else:
+                father["num_genes"] = 0
+
+        else:
+            mother = {"name": None}
+            father = {"name": None}
+
+        if person in one_gene:
+            probability *= one_gene_probability(person, mother, father)
+            num_genes = 1
+        elif person in two_genes:
+            probability *= two_genes_probability(person, mother, father)
+            num_genes = 2
+        else:
+            probability *= no_genes_probability(person, mother, father)
+            num_genes = 0
+
+        if person in have_trait:
+            probability *= PROBS["trait"][num_genes][True]
+        else:
+            probability *= PROBS["trait"][num_genes][False]
+
+    return probability
+
+
+def from_parents_probability(person, mother, father):
+    """
+    Calculate the probability that person got a gene
+    from his mother and another probability, that person
+    got a gene from his father
+    "mother" and father are dicts with the following structure
+    mother = {"name": name, "num_genes": num_genes}
+    father = {"name": name, "num_genes": num_genes}
+    """
+    if mother["num_genes"] == 0:
+        # If mother has no genes, the only way
+        # 'person' got a gene from her is through mutation
+        from_mother_prob = PROBS["mutation"]
+    elif mother["num_genes"] == 1:
+        # If mother has 1 gene, 'person' got it
+        # with probability 0.5 and it did not go through mutation,
+        # with probability PROBS["mutation"]
+        # or did not get the gene, but it went through mutation
+        from_mother_prob = (0.5*negation(PROBS["mutation"]) +
+                            0.5*PROBS["mutation"])
+        # The expression above is always equals to 0.5,
+        # but the long expression was used for the sake of clarity
+    else:
+        # Mother has 2 genes
+        from_mother_prob = 1 - PROBS["mutation"]
+
+    if father["num_genes"] == 0:
+        from_father_prob = PROBS["mutation"]
+    elif father["num_genes"] == 1:
+        from_father_prob = (0.5*negation(PROBS["mutation"]) +
+                            0.5*PROBS["mutation"])
+    else:
+        from_father_prob = 1 - PROBS["mutation"]
+
+    return from_mother_prob, from_father_prob
+
+
+def negation(probability):
+    """
+    Returns the negation of the probability,
+    e.g. negation(from_mother_prob) returns the probability
+    that person DID NOT get a gene from his mother
+    """
+    return 1 - probability
+
+
+def no_genes_probability(person, mother, father):
+    """
+    Calculate the probability that person has no genes.
+    "mother" and father are dicts with the following structure
+    mother = {"name": name, "num_genes": num_genes}
+    father = {"name": name, "num_genes": num_genes}
+    If there are no available information on the parents,
+    "name" should be None
+    """
+    # It is assumed that either mother and father are both unknown,
+    # or are both known
+    if mother["name"] is None or father["name"] is None:
+        # No information about the parents is available
+        # Unconditional probability is used in this case
+        return PROBS["gene"][0]
+
+    else:
+        # Information about the parents is available.
+        # 'person' must not get the gene from his mother and from his father
+        from_mother_prob, from_father_prob = from_parents_probability(person, mother, father)
+
+        probability = negation(from_father_prob)*negation(from_mother_prob)
+
+        return probability
+
+
+def one_gene_probability(person, mother, father):
+    """
+    Calculate the probability that person has one gene.
+    "mother" and father are dicts with the following structure
+    mother = {"name": name, "num_genes": num_genes}
+    father = {"name": name, "num_genes": num_genes}
+    If there are no available information on the parents,
+    "name" should be None
+    """
+    # It is assumed that either mother and father are both unknown,
+    # or are both known
+    if mother["name"] is None or father["name"] is None:
+        # No information about the parents is available
+        # Unconditional probability is used in this case
+        return PROBS["gene"][1]
+
+    else:
+        # Information about the parents is available.
+        # Either 'person' gets the gene from his mother and not his father,
+        # or he gets the gene from his father and not his mother
+        from_mother_prob, from_father_prob = from_parents_probability(person, mother, father)
+
+        probability = (from_mother_prob*negation(from_father_prob) +
+                       from_father_prob*negation(from_mother_prob))
+
+        return probability
+
+
+def two_genes_probability(person, mother, father):
+    """
+    Calculate the probability that person has two genes.
+    "mother" and father are dicts with the following structure
+    mother = {"name": name, "num_genes": num_genes}
+    father = {"name": name, "num_genes": num_genes}
+    If there are no available information on the parents,
+    "name" should be None
+    """
+    # It is assumed that either mother and father are both unknown,
+    # or are both known
+    if mother["name"] is None or father["name"] is None:
+        # No information about the parents is available
+        # Unconditional probability is used in this case
+        return PROBS["gene"][2]
+
+    else:
+        # Information about the parents is available.
+        # 'person' must get one gene from his mother and
+        # one from his father
+        from_mother_prob, from_father_prob = from_parents_probability(person, mother, father)
+
+        probability = (from_mother_prob*from_father_prob)
+
+        return probability
 
 
 def update(probabilities, one_gene, two_genes, have_trait, p):
@@ -149,7 +319,17 @@ def update(probabilities, one_gene, two_genes, have_trait, p):
     Which value for each distribution is updated depends on whether
     the person is in `have_gene` and `have_trait`, respectively.
     """
-    raise NotImplementedError
+    for person in probabilities:
+        if person in one_gene:
+            num_genes = 1
+        elif person in two_genes:
+            num_genes = 2
+        else:
+            num_genes = 0
+
+        probabilities[person]["gene"][num_genes] += p
+
+        probabilities[person]["trait"][person in have_trait] += p
 
 
 def normalize(probabilities):
@@ -157,7 +337,16 @@ def normalize(probabilities):
     Update `probabilities` such that each probability distribution
     is normalized (i.e., sums to 1, with relative proportions the same).
     """
-    raise NotImplementedError
+    for person in probabilities:
+        trait_sum = sum(probabilities[person]["trait"].values())
+        gene_sum = sum(probabilities[person]["gene"].values())
+        for trait in probabilities[person]["trait"]:
+            probabilities[person]["trait"][trait] = (probabilities[person]["trait"][trait] /
+                                                     trait_sum)
+
+        for gene in probabilities[person]["gene"]:
+            probabilities[person]["gene"][gene] = (probabilities[person]["gene"][gene] /
+                                                   gene_sum)
 
 
 if __name__ == "__main__":
