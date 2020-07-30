@@ -166,7 +166,7 @@ class CrosswordCreator():
         crossword variable); return False otherwise.
         """
         for var in self.crossword.variables:
-            if var not in assignment.keys():
+            if var not in assignment:
                 return False
 
         return True
@@ -176,9 +176,23 @@ class CrosswordCreator():
         Return True if `assignment` is consistent (i.e., words fit in crossword
         puzzle without conflicting characters); return False otherwise.
         """
-        for variable in assignment:
-            if len(assignment[variable]) != variable.length:
+        # Check if there is any repeated word
+        words = list(assignment.values())
+        if len(set(words)) != len(words):
+            return False
+
+        # Check if chosen word length matches the variable length
+        for var in assignment:
+            if len(assignment[var]) != var.length:
                 return False
+            # Check for conflicting characters with neighbors
+            for neighbor in self.crossword.neighbors(var):
+                # Check if neighbor is assigned to some word
+                if neighbor not in assignment:
+                    break
+                overlaps = self.crossword.overlaps[var, neighbor]
+                if assignment[var][overlaps[0]] != assignment[neighbor][overlaps[1]]:
+                    return False
 
         return True
 
@@ -267,11 +281,12 @@ class CrosswordCreator():
         """
         if self.assignment_complete(assignment):
             return assignment
+
         var = self.select_unassigned_variable(assignment)
 
         for value in self.domains[var]:
+            assignment[var] = value
             if self.consistent(assignment):
-                assignment[var] = value
                 result = self.backtrack(assignment)
                 if result:
                     return result
