@@ -132,3 +132,4 @@ dmypy.json
 .vscode/
 
 traffic/gtsrb/
+traffic/gtsrb-small/
