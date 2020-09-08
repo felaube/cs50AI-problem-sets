@@ -6,6 +6,7 @@ import tensorflow as tf
 
 from sklearn.model_selection import train_test_split
 
+
 EPOCHS = 10
 IMG_WIDTH = 30
 IMG_HEIGHT = 30
@@ -30,6 +31,8 @@ def main():
 
     # Get a compiled neural network
     model = get_model()
+
+    print(model.summary())
 
     # Fit model on training data
     model.fit(x_train, y_train, epochs=EPOCHS)
@@ -76,7 +79,49 @@ def get_model():
     `input_shape` of the first layer is `(IMG_WIDTH, IMG_HEIGHT, 3)`.
     The output layer should have `NUM_CATEGORIES` units, one for each category.
     """
-    raise NotImplementedError
+
+    # Create a convolutional neural network
+    model = tf.keras.models.Sequential([
+
+        # Input layer - IMG_WIDTH x IMG_HEIGHT RGB images
+        tf.keras.Input(shape=(IMG_WIDTH, IMG_HEIGHT, 3)),
+
+        # Convolutional layer. Learn 16 filters using a 5x5 kernel
+        tf.keras.layers.Conv2D(16, (5, 5), activation="relu", padding="same"),
+
+        # Max-pooling layer, using 2x2 pool size
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+
+        # Convolutional layer. Learn 32 filters using a 5x5 kernel
+        tf.keras.layers.Conv2D(32, (5, 5), activation="relu", padding="same"),
+
+        # Max-pooling layer, using 2x2 pool size
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+
+        # Convolutional layer. Learn 64 filters using a 5x5 kernel
+        tf.keras.layers.Conv2D(64, (5, 5), activation="relu", padding="same"),
+
+        # Max-pooling layer, using 2x2 pool size
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+
+        # Flatten units
+        tf.keras.layers.Flatten(),
+
+        # Add a hidden layer with dropout
+        tf.keras.layers.Dense(512, activation="relu"),
+        tf.keras.layers.Dropout(0.35),
+
+        # Add an output layer with output units for all categories
+        tf.keras.layers.Dense(NUM_CATEGORIES, activation="softmax")
+    ])
+
+    model.compile(
+        optimizer="adam",
+        loss="categorical_crossentropy",
+        metrics=["accuracy"]
+    )
+
+    return model
 
 
 if __name__ == "__main__":
