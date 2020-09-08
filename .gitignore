@@ -133,3 +133,7 @@ dmypy.json
 
 traffic/gtsrb/
 traffic/gtsrb-small/
+traffic/gtsrb-medium/
+traffic/gtsrb.zip
+traffic/gtsrb-small.zip
+traffic/gtsrb-medium.zip
