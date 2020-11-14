@@ -3,7 +3,7 @@ from scipy.spatial.distance import cosine
 import math
 import numpy as np
 
-with open("words.txt") as f:
+with open("words.txt", encoding="utf8") as f:
     words = dict()
     for i in range(50000):
         row = next(f).split()
